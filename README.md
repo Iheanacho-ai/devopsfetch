@@ -179,6 +179,6 @@ The `devopsfetch` tool accepts arguments that tells the tool what information yo
 ./devopsfetch -h
 ```
 ## Logging and Monitoring
-All logs are written to `devopsfetch.log`. The logs include:
+All logs are written to `/var/log/devopsfetch.log`. The logs include:
 - `INFO`: Successful operations and activities.
 - `ERROR`: Errors encountered during execution.
