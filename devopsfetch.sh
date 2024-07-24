@@ -74,7 +74,7 @@ display_time_range() {
 
 
 # Store each of the arguments in a variable
-while [[ "$#" -gt 0 ]]; do
+while [ "$#" -gt 0 ]; do
     case $1 in 
         -p|--port) 
             display_ports "$2" | tee -a "$LOG_FILE"
