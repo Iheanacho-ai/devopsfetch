@@ -123,23 +123,23 @@ while [ "$#" -gt 0 ]; do
     case $1 in 
         -p|--port) 
             display_ports "$2" 
-            shift 2
+            shift
             ;;
         -d|--docker) 
             display_docker "$2"
-            shift 2
+            shift
             ;;
         -n|--nginx) 
             display_nginx "$2"
-            shift 2
+            shift
             ;;
         -u|--users) 
             display_users "$2" 
-            shift 2
+            shift
             ;;
         -t|--time) 
             display_time_range "$2" "$3"
-            shift 3
+            shift
             ;;
         -h|--help) 
             display_help 
