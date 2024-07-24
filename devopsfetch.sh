@@ -62,7 +62,7 @@ display_users() {
 
 #display time range
 display_time_range() {
-   if [[ -z "$2" ]]; then # Check if only one argument was provided
+   if [ -z "$2" ]; then # Check if only one argument was provided
         echo "Activities on $1:"
         journalctl --since "$1" --until "$1 23:59:59" | tail -n 50 
     else
@@ -106,5 +106,4 @@ while [ "$#" -gt 0 ]; do
             exit 1 
             ;;
     esac
-    shift
 done
