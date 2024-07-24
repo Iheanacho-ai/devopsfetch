@@ -15,10 +15,6 @@ display_help() {
 
 LOG_FILE="devopsfetch.log"
 
-log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1 - $2" >> "$LOG_FILE"
-}
-
 # display all active ports
 display_ports() {
     if [ -z "$1" ]; then 
