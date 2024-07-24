@@ -18,28 +18,22 @@ if [ "$EUID" -ne 0 ]; then
 fi
 ```
 
-Next, it installs the dependencies the tool requires to run:
+Next, it copies the `devopsfetch` script to `/usr/local/bin` directory, and sets the script as executable:
 ```sh
-# Install dependencies
-install_dependencies() {
-    echo "Installing necessary packages..."
-    apt-get update
-    apt-get install -y net-tools docker.io nginx
-}
+cp devopsfetch /usr/local/bin/devopsfetch
+chmod +x /usr/local/bin/devopsfetch
+
 ```
 
-Next, the script copies the `devopsfetch` executable to `/usr/local/bin/` and sets the executable permission on it.
+Next, it creates a log file at this path `/var/log/devopsfetch.log` and set the log file permissions to `666`, meaning all users can read and write to this file:
 
 ```sh
-# Install devopsfetch
-install_devopsfetch() {
-    echo "Installing devopsfetch..."
-    cp devopsfetch /usr/local/bin/devopsfetch
-    chmod +x /usr/local/bin/devopsfetch
-}
+touch /var/log/devopsfetch.log
+chmod 666 /var/log/devopsfetch.log
+
 ```
  
-After copying the executable, the next step is to create a systemd service file `/etc/systemd/system/devopsfetch.service`. This file specifies:
+After creating the log file, the next step is to create a systemd service file `/etc/systemd/system/devopsfetch.service`. This file specifies:
 - **Unit Section**: Describes the service and specifies it should start after the network is up.
 - **Service Section**: Configures the service to execute /usr/local/bin/devopsfetch, restart automatically if it fails, and run as the root user.
 - **Install Section**: Configures the service to be wanted by the multi-user target (i.e., it should be started in a multi-user system state).
@@ -48,48 +42,88 @@ After copying the executable, the next step is to create a systemd service file 
 
 ```sh
 # Create systemd service file
-create_systemd_service() {
-    echo "Creating systemd service..."
-    SERVICE_FILE="/etc/systemd/system/devopsfetch.service"
-    bash -c "cat > $SERVICE_FILE <<EOF
+cat << EOF > /etc/systemd/system/devopsfetch.service
 [Unit]
 Description=DevOpsFetch Monitoring Service
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/devopsfetch
+ExecStart=/bin/bash -c '/usr/local/bin/devopsfetch -t "$(date -d \"5 minutes ago\" +\"%Y-%m-%d %H:%M:%S\")" "$(date +\"%Y-%m-%d %H:%M:%S\")"'
 Restart=always
 User=root
 
 [Install]
 WantedBy=multi-user.target
-EOF"
-}
+EOF
+
 
 ```
 
-Then it defines a function `enable_and_start_service` that reloads the systemd configuration to recognize the new service, enables the service to start on boot, and starts the service immediately.
+Then it creates a timer that schedules the `devopsfetch` service every 5 minutes:
 
 ```sh
-# Enable and start the service
-enable_and_start_service() {
-    echo "Enabling and starting the devopsfetch service..."
-    systemctl daemon-reload
-    systemctl enable devopsfetch.service
-    systemctl start devopsfetch.service
-}
+# Create timer file for execution every 5 minutes
+cat << EOF > /etc/systemd/system/devopsfetch.timer
+[Unit]
+Description=Run DevOpsFetch every 5 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
 
 ```
 
-Finally, the script calls all the previosuly defined functions inorder to perform the installation and setup the tasks. When the installation is completed and all the tasks are done, it prints out an "Installation complete" message to your console.
+Next, the script:
+- **Reloads Systemd**: Reloads `systemd` to recognize the new service and timer files.
+- **Enables Services**: Configures `systemd` to start the service and timer at boot.
+- **Starts Timer**: Starts the timer immediately, which will, in turn, start the devopsfetch service according to the schedule.
 
 ```sh
-install_dependencies
-install_devopsfetch
-create_systemd_service
-enable_and_start_service
+# Reload systemd, enable and start the service and timer
+systemctl daemon-reload
+systemctl enable devopsfetch.service
+systemctl enable devopsfetch.timer
+systemctl start devopsfetch.timer
 
-echo "Installation complete."
+```
+
+After starting the service the script then setups a log rotation to archive old log entries:
+
+```sh
+# Set up log rotation
+cat << EOF > /etc/logrotate.d/devopsfetch
+/var/log/devopsfetch.log {
+    hourly
+    rotate 288
+    compress
+    missingok
+    notifempty
+    create 666 root root
+}
+EOF
+
+
+```
+
+In the code block above, the script sets up `logrotate` to manage the log file. It does this:
+- **Hourly**: Rotates the log file every hour.
+- **Rotate 288**: Keeps 288 hours of logs (12 days).
+- **Compress**: Compresses old log files to save space.
+- **Missingok**: Ignores errors if the log file is missing.
+- **Notifempty**: Does not rotate the log file if it is empty.
+- **Create**: Specifies permissions and ownership for the newly created log files.
+
+Finally after the script has installed the dependencies and completed the devopsfetch service setup, the script sends out this information to the user:
+
+```sh
+echo "DevOps fetch has been installed and configured."
+
 ```
 
 ## Running the Installation Script

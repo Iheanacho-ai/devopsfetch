@@ -13,7 +13,7 @@ display_help() {
     echo "  -h, --help      Displays all the available options"
 }
 
-LOG_FILE="devopsfetch.log"
+LOG_FILE="/var/log/devopsfetch.log"
 
 # Generate logs and passwords 
 log_message() {
@@ -119,36 +119,38 @@ display_time_range() {
 
 
 # Store each of the arguments in a variable
-while [ "$#" -gt 0 ]; do
-    case $1 in 
-        -p|--port) 
-            display_ports "$2" 
-            shift
-            ;;
-        -d|--docker) 
-            display_docker "$2"
-            shift
-            ;;
-        -n|--nginx) 
-            display_nginx "$2"
-            shift
-            ;;
-        -u|--users) 
-            display_users "$2" 
-            shift
-            ;;
-        -t|--time) 
-            display_time_range "$2" "$3"
-            shift
-            ;;
-        -h|--help) 
-            display_help 
-            exit 0 
-            ;;
-        *) 
-            echo "Invalid input argument: $1"
-            display_help
-            exit 1 
-            ;;
-    esac
-done
+
+case $1 in 
+    -p|--port)
+        display_ports "$2" 
+        shift
+        ;;
+    -d|--docker) 
+        display_docker "$2"
+        shift
+        ;;
+    -n|--nginx) 
+        display_nginx "$2"
+        shift
+        ;;
+    -u|--users) 
+        display_users "$2" 
+        shift
+        ;;
+    -t|--time) 
+        display_time_range "$2" "$3"
+        shift
+        ;;
+    -h|--help) 
+        display_help 
+        exit 0 
+        shift
+        ;;
+    *) 
+        echo "Invalid input argument: $1"
+        display_help
+        exit 1 
+        ;;
+
+esac
+

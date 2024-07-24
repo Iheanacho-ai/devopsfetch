@@ -6,51 +6,59 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Install dependencies
-install_dependencies() {
-    echo "Installing necessary packages..."
-    apt-get update
-    apt-get install -y net-tools docker.io nginx
-}
+# Copy main script to /usr/local/bin
+cp devopsfetch /usr/local/bin/devopsfetch
+chmod +x /usr/local/bin/devopsfetch
 
-# Install devopsfetch
-install_devopsfetch() {
-    echo "Installing devopsfetch..."
-    cp devopsfetch /usr/local/bin/devopsfetch
-    chmod +x /usr/local/bin/devopsfetch
-}
+# Create log file and set permissions
+touch /var/log/devopsfetch.log
+chmod 666 /var/log/devopsfetch.log
 
 # Create systemd service file
-create_systemd_service() {
-    echo "Creating systemd service..."
-    SERVICE_FILE="/etc/systemd/system/devopsfetch.service"
-    bash -c "cat > $SERVICE_FILE <<EOF
+cat << EOF > /etc/systemd/system/devopsfetch.service
 [Unit]
 Description=DevOpsFetch Monitoring Service
 After=network.target
 
 [Service]
-ExecStart=/usr/local/bin/devopsfetch
+ExecStart=/bin/bash -c '/usr/local/bin/devopsfetch -t "$(date -d \"5 minutes ago\" +\"%Y-%m-%d %H:%M:%S\")" "$(date +\"%Y-%m-%d %H:%M:%S\")"'
 Restart=always
 User=root
 
 [Install]
 WantedBy=multi-user.target
-EOF"
+EOF
+
+# Create timer file for execution every 5 minutes
+cat << EOF > /etc/systemd/system/devopsfetch.timer
+[Unit]
+Description=Run DevOpsFetch every 5 minutes
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+# Reload systemd, enable and start the service and timer
+systemctl daemon-reload
+systemctl enable devopsfetch.service
+systemctl enable devopsfetch.timer
+systemctl start devopsfetch.timer
+
+# Set up log rotation
+cat << EOF > /etc/logrotate.d/devopsfetch
+/var/log/devopsfetch.log {
+    hourly
+    rotate 288
+    compress
+    missingok
+    notifempty
+    create 666 root root
 }
+EOF
 
-# Enable and start the service
-enable_and_start_service() {
-    echo "Enabling and starting the devopsfetch service..."
-    systemctl daemon-reload
-    systemctl enable devopsfetch.service
-    systemctl start devopsfetch.service
-}
-
-# Main script execution
-install_dependencies
-install_devopsfetch
-create_systemd_service
-enable_and_start_service
-
-echo "Installation complete."
+echo "DevOpsFetch has been installed and configured."
