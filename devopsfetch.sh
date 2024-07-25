@@ -153,6 +153,19 @@ display_time_range() {
     fi
 }
 
+# Continuous monitoring mode
+continuous_monitoring() {
+    while true; do
+        display_docker
+        display_nginx
+        display_ports
+        display_time_range
+        display_users
+        sleep 300  # Run every 5 minutes
+    done
+}
+
+
 # Store each of the arguments in a variable
 case $1 in 
     -p|--port)

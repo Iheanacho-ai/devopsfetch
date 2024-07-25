@@ -7,7 +7,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # Copy main script to /usr/local/bin
-cp devopsfetch /usr/local/bin/devopsfetch
+cp devopsfetch.sh /usr/local/bin/devopsfetch
 chmod +x /usr/local/bin/devopsfetch
 
 # Create log file and set permissions
@@ -29,25 +29,11 @@ User=root
 WantedBy=multi-user.target
 EOF
 
-# Create timer file for execution every 5 minutes
-cat << EOF > /etc/systemd/system/devopsfetch.timer
-[Unit]
-Description=Run DevOpsFetch every 5 minutes
-
-[Timer]
-OnBootSec=5min
-OnUnitActiveSec=5min
-Persistent=true
-
-[Install]
-WantedBy=timers.target
-EOF
 
 # Reload systemd, enable and start the service and timer
 systemctl daemon-reload
 systemctl enable devopsfetch.service
-systemctl enable devopsfetch.timer
-systemctl start devopsfetch.timer
+systemctl start devopsfetch.service
 
 # Set up log rotation
 cat << EOF > /etc/logrotate.d/devopsfetch
